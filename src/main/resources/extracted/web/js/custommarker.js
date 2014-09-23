@@ -19,6 +19,7 @@ L.CustomMarker = L.Class.extend({
 		
 		if (!this._element && this.options.elementCreator) {
 			this._element = this.options.elementCreator();
+			this._icon = this._element;
 			
 			this._element.className += ' leaflet-marker-icon';
 			
@@ -84,7 +85,7 @@ L.CustomMarker = L.Class.extend({
 			
 			L.DomEvent.addListener(this._element, 'click', this._onMouseClick, this);
 
-			var events = ['dblclick', 'mousedown', 'mouseover', 'mouseout'];
+			var events = ['dblclick', 'mousedown', 'mouseover', 'mouseout', 'contextmenu'];
 			for (var i = 0; i < events.length; i++) {
 				L.DomEvent.addListener(this._element, events[i], this._fireMouseEvent, this);
 			}
@@ -104,10 +105,29 @@ L.CustomMarker = L.Class.extend({
 		if (this.dragging && this.dragging.moved()) { return; }
 		this.fire(e.type);
 	},
-	
-	_fireMouseEvent: function(e) {
-		this.fire(e.type);
-		L.DomEvent.stopPropagation(e);
+
+	_fireMouseEvent: function (e) {
+
+		var map = this._map,
+			containerPoint = map.mouseEventToContainerPoint(e),
+			layerPoint = map.containerPointToLayerPoint(containerPoint),
+			latlng = map.layerPointToLatLng(layerPoint);
+
+		this.fire(e.type, {
+			latlng: latlng,
+			layerPoint: layerPoint,
+			containerPoint: containerPoint,
+			originalEvent: e
+		});
+
+		// TODO proper custom event propagation
+		// this line will always be called if marker is in a FeatureGroup
+		if (e.type === 'contextmenu' && this.hasEventListeners(e.type)) {
+			L.DomEvent.preventDefault(e);
+		}
+		if (e.type !== 'mousedown') {
+			L.DomEvent.stopPropagation(e);
+		}
 	},
 	
 	openPopup: function() {
@@ -121,6 +141,7 @@ L.CustomMarker = L.Class.extend({
 		if (this._popup) {
 			this._popup._close();
 		}
+		return this;
 	},
 	
 	bindPopup: function(content, options) {
