@@ -39,3 +39,10 @@ body {
 .dynmap .hitbar {
     right: 200px; /* width of sidebar */
 }
+
+
+/* Marker Editing and Menus */
+
+.context-menu-list {
+   color: black;
+}

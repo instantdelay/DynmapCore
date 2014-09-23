@@ -57,23 +57,23 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 				}
 				dynmapmarkersets[name] = ms;
 				$.each(markerset.markers, function(mname, marker) {
-					ms.markers[mname] = { label: marker.label, markup: marker.markup, x: marker.x, y: marker.y, z:marker.z,
+					ms.markers[mname] = { id: mname, label: marker.label, markup: marker.markup, x: marker.x, y: marker.y, z:marker.z,
 						icon: marker.icon, desc: marker.desc, dim: marker.dim, minzoom: marker.minzoom || -1, maxzoom: marker.maxzoom || -1 };
 					createMarker(ms, ms.markers[mname], ts);
 				});
 				$.each(markerset.areas, function(aname, area) {
-					ms.areas[aname] = { label: area.label, markup: area.markup, desc: area.desc, x: area.x, z: area.z,
+					ms.areas[aname] = { id: aname, label: area.label, markup: area.markup, desc: area.desc, x: area.x, z: area.z,
 						ytop: area.ytop, ybottom: area.ybottom, color: area.color, weight: area.weight, opacity: area.opacity,
 						fillcolor: area.fillcolor, fillopacity: area.fillopacity, minzoom: area.minzoom || -1, maxzoom: area.maxzoom || -1 };
 					createArea(ms, ms.areas[aname], ts);
 				});
 				$.each(markerset.lines, function(lname, line) {
-					ms.lines[lname] = { label: line.label, markup: line.markup, desc: line.desc, x: line.x, y: line.y, z: line.z,
+					ms.lines[lname] = { id: lname, label: line.label, markup: line.markup, desc: line.desc, x: line.x, y: line.y, z: line.z,
 						color: line.color, weight: line.weight, opacity: line.opacity, minzoom: line.minzoom || -1, maxzoom: line.maxzoom || -1 };
 					createLine(ms, ms.lines[lname], ts);
 				});
 				$.each(markerset.circles, function(cname, circle) {
-					ms.circles[cname] = { label: circle.label, markup: circle.markup, desc: circle.desc, x: circle.x, y: circle.y, z: circle.z,
+					ms.circles[cname] = { id: cname, label: circle.label, markup: circle.markup, desc: circle.desc, x: circle.x, y: circle.y, z: circle.z,
 						xr: circle.xr, zr: circle.zr, color: circle.color, weight: circle.weight, opacity: circle.opacity,
 						fillcolor: circle.fillcolor, fillopacity: circle.fillopacity, minzoom: circle.minzoom || -1, maxzoom: circle.maxzoom || -1 };
 					createCircle(ms, ms.circles[cname], ts);
@@ -132,6 +132,8 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 		}
 		
 		updateMarker(set, marker, dynmap.map.getZoom());
+
+		$(dynmap).trigger('markerAdded', {type: 'point', marker: marker, markerSet: set});
 	}
 
 	function updateMarker(set, marker, mapzoom) {
@@ -238,6 +240,8 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 		}
 		
 		updateMarker(set, line, dynmap.map.getZoom());
+
+		$(dynmap).trigger('markerAdded', {type: 'line', marker: line, markerSet: set});
 	}
 
 	function createCircle(set, circle, ts) {
@@ -375,7 +379,8 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 			var set = dynmapmarkersets[msg.set];
 			deleteMarker(set, set.markers[msg.id]);
 			
-			var marker = { x: msg.x, y: msg.y, z: msg.z, icon: msg.icon, label: msg.label, markup: msg.markup, desc: msg.desc, dim: msg.dim || '16x16', minzoom: msg.minzoom || -1, maxzoom: msg.maxzoom };
+			var marker = { id: msg.id, x: msg.x, y: msg.y, z: msg.z, icon: msg.icon, label: msg.label,
+            markup: msg.markup, desc: msg.desc, dim: msg.dim || '16x16', minzoom: msg.minzoom || -1, maxzoom: msg.maxzoom };
 			set.markers[msg.id] = marker;
 			createMarker(set, marker, msg.timestamp);
 		}
@@ -421,7 +426,7 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 			var set = dynmapmarkersets[msg.set];
 			deleteMarker(set, set.areas[msg.id]);
 
-			var area = { x: msg.x, ytop: msg.ytop, ybottom: msg.ybottom, z: msg.z, label: msg.label, markup: msg.markup, desc: msg.desc,
+			var area = { id: msg.id, x: msg.x, ytop: msg.ytop, ybottom: msg.ybottom, z: msg.z, label: msg.label, markup: msg.markup, desc: msg.desc,
 				color: msg.color, weight: msg.weight, opacity: msg.opacity, fillcolor: msg.fillcolor, fillopacity: msg.fillopacity, minzoom: msg.minzoom || -1, maxzoom: msg.maxzoom || -1 };
 			set.areas[msg.id] = area;
 			createArea(set, area, msg.timestamp);
@@ -435,7 +440,7 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 			var set = dynmapmarkersets[msg.set];
 			deleteMarker(set, set.lines[msg.id]);
 			
-			var line = { x: msg.x, y: msg.y, z: msg.z, label: msg.label, markup: msg.markup, desc: msg.desc,
+			var line = { id: msg.id, x: msg.x, y: msg.y, z: msg.z, label: msg.label, markup: msg.markup, desc: msg.desc,
 				color: msg.color, weight: msg.weight, opacity: msg.opacity, minzoom: msg.minzoom || -1, maxzoom: msg.maxzoom || -1 };
 			set.lines[msg.id] = line;
 			createLine(set, line, msg.timestamp);
@@ -449,7 +454,7 @@ componentconstructors['markers'] = function(dynmap, configuration) {
 			var set = dynmapmarkersets[msg.set];
 			deleteMarker(set, set.circle[msg.id]);
 
-			var circle = { x: msg.x, y: msg.y, z: msg.z, xr: msg.xr, zr: msg.zr, label: msg.label, markup: msg.markup, desc: msg.desc,
+			var circle = { id: msg.id, x: msg.x, y: msg.y, z: msg.z, xr: msg.xr, zr: msg.zr, label: msg.label, markup: msg.markup, desc: msg.desc,
 				color: msg.color, weight: msg.weight, opacity: msg.opacity, fillcolor: msg.fillcolor, fillopacity: msg.fillopacity, minzoom: msg.minzoom || -1, maxzoom: msg.maxzoom || -1 };
 			set.circles[msg.id] = circle;
 			createCircle(set, circle, msg.timestamp);

@@ -28,6 +28,10 @@ public class ConfigJSServlet extends HttpServlet {
         sb.append("  update: '");
         sb.append(core.configuration.getString("url/update", "up/world/{world}/{timestamp}"));
         sb.append("',\n");
+        /* Get edit URL */
+        sb.append("  edit: '");
+        sb.append(core.configuration.getString("url/edit", "edit"));
+        sb.append("',\n");
         /* Get sendmessage URL */
         sb.append("  sendmessage: '");
         sb.append(core.configuration.getString("url/sendmessage", "up/sendmessage"));

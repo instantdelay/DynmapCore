@@ -271,6 +271,20 @@ class PolyLineMarkerImpl implements PolyLineMarker {
             MarkerAPIImpl.saveMarkers();
     }
     @Override
+    public void insertCorner(int n, double x, double y, double z) {
+    	if(markerset == null) return;
+    	if (n > corners.size()) {
+    		// More than 1 greater... too big
+    		return;
+    	}
+    	corners.add(n, new Coord(x, y, z));
+    	
+    	// Send update and persist
+    	MarkerAPIImpl.polyLineMarkerUpdated(this, MarkerUpdate.UPDATED);
+        if(ispersistent)
+            MarkerAPIImpl.saveMarkers();
+    }
+    @Override
     public void deleteCorner(int n) {
         if(markerset == null) return;
         if(n < corners.size()) {
