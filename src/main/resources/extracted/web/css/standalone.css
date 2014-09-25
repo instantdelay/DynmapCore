@@ -46,3 +46,7 @@ body {
 .context-menu-list {
    color: black;
 }
+
+.map-crosshair {
+   cursor: crosshair;
+}

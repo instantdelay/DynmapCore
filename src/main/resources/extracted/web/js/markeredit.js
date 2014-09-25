@@ -8,39 +8,71 @@ componentconstructors['markeredit'] = function(dynmap, configuration) {
 	function beginLineCreation() {
 		var points = [];
 
+		var $mapContainer = $(dynmap.map.getContainer());
+		$mapContainer.addClass('map-crosshair');
+
+		var line;
+		var lastClickMapPoint = null;
+
 		dynmap.map.on('click', function(e) {
+
+			if (points.length == 0) {
+				line = new L.Polyline([e.latlng, e.latlng], {color: 'yellow', weight: 2});
+				dynmap.map.addLayer(line);
+			}
 
 			var loc = dynmap.getProjection().fromLatLngToLocation(e.latlng, 65);
 
-			points.push({x: ""+loc.x, y: ""+loc.y, z: ""+loc.z});
+			if (lastClickMapPoint == null || lastClickMapPoint.distanceTo(e.latlng) > 5000) {
+				points.push({x: ""+loc.x, y: ""+loc.y, z: ""+loc.z});
 
-			if (points.length >= 2) {
-				dynmap.map.off('click', arguments.callee);
+				if (points.length > 1) {
+					line.spliceLatLngs(points.length + 1, 0, e.latlng);
+				}
+			}
+			else {
+				// Click last point. Complete interaction
 
-				var label = prompt("Line label?");
-				if (label == null) return;
+				if (points.length >= 2) {
+					dynmap.map.off('click', arguments.callee);
+					$mapContainer.removeClass('map-crosshair');
+					dynmap.map.removeLayer(line);
 
-				var data = {
-					label: label,
-					points: points,
-					world: dynmap.world.name
-				};
+					var label = prompt("Line label?");
+					if (label == null) return;
 
-				// FIXME
-				var set = {
-					id: "markers"
-				};
+					var data = {
+						label: label,
+						points: points,
+						world: dynmap.world.name
+					};
 
-				$.putJSON(data, dynmap.options.url.edit + "/sets/" + set.id + "/lines", function(resp) {
-					// Nothing to do right now... relying on update events
-				}, function(status, statusMessage) {
-					alert('Could not create: ' + statusMessage);
-				});
+					// FIXME
+					var set = {
+						id: "markers"
+					};
 
-				points = [];
+					$.putJSON(data, dynmap.options.url.edit + "/sets/" + set.id + "/lines", function(resp) {
+						// Nothing to do right now... relying on update events
+					}, function(status, statusMessage) {
+						alert('Could not create: ' + statusMessage);
+					});
+
+					points = [];
+				}
 			}
 
+			lastClickMapPoint = e.latlng;
+
 			L.DomEvent.stopPropagation(e);
+		});
+
+		dynmap.map.on('mousemove', function(e) {
+			if (points.length == 0) {
+				return;
+			}
+
+			line.spliceLatLngs(points.length, 1, e.latlng);
 		});
 	}
 
