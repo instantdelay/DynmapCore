@@ -8,7 +8,7 @@ import org.json.simple.JSONObject;
 public class ClientConfigurationComponent extends Component {
     public ClientConfigurationComponent(final DynmapCore core, ConfigurationNode configuration) {
         super(core, configuration);
-        core.events.<JSONObject>addListener("buildclientconfiguration", new Listener<JSONObject>() {
+        core.events.<JSONObject>addListener(InternalEvents.BUILD_CLIENT_CONFIG, new Listener<JSONObject>() {
             @Override
             public void triggered(JSONObject t) {
                 ConfigurationNode c = core.configuration;

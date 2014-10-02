@@ -2146,7 +2146,7 @@ public class DynmapCore implements DynmapCommonAPI {
             @Override
             public void run() {
                 ChatEvent event = new ChatEvent("web", name, message);
-                events.trigger("webchat", event);
+                events.trigger(InternalEvents.WEBCHAT, event);
             }
         };
         getServer().scheduleServerTask(c, 1);

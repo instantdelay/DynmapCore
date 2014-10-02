@@ -30,7 +30,7 @@ public class ClientUpdateComponent extends Component {
         if(is_protected)
             core.player_info_protected = true;
         
-        core.events.addListener("buildclientupdate", new Event.Listener<ClientUpdateEvent>() {
+        core.events.addListener(InternalEvents.BUILD_CLIENT_UPDATE, new Event.Listener<ClientUpdateEvent>() {
             @Override
             public void triggered(ClientUpdateEvent e) {
                 buildClientUpdate(e);
