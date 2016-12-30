@@ -1,11 +1,14 @@
 package org.dynmap;
 
+import static org.dynmap.JSONUtils.s;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -14,7 +17,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
+import org.dynmap.chat.ChatConfiguration;
 import org.dynmap.storage.MapStorage;
 import org.dynmap.utils.BufferInputStream;
 import org.dynmap.utils.BufferOutputStream;
@@ -24,25 +29,13 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-import static org.dynmap.JSONUtils.*;
-
-import java.nio.charset.Charset;
-
 public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
     protected long jsonInterval;
     protected long currentTimestamp = 0;
     protected long lastTimestamp = 0;
     protected long lastChatTimestamp = 0;
-    protected JSONParser parser = new JSONParser();
-    private boolean hidewebchatip;
-    private boolean useplayerloginip;
-    private boolean requireplayerloginip;
-    private boolean trust_client_name;
-    private boolean checkuserban;
-    private boolean req_login;
-    private boolean chat_perms;
-    private int lengthlimit;
-    private HashMap<String,String> useralias = new HashMap<String,String>();
+    private final ChatConfiguration chatConfig;
+    private final Map<String,String> useralias = new HashMap<String,String>();
     private int aliasindex = 1;
     private long last_confighash;
     private MessageDigest md;
@@ -117,16 +110,8 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
     private static Charset cs_utf8 = Charset.forName("UTF-8");
     public JsonFileClientUpdateComponent(final DynmapCore core, final ConfigurationNode configuration) {
         super(core, configuration);
-        final boolean allowwebchat = configuration.getBoolean("allowwebchat", false);
+        this.chatConfig = new ChatConfiguration(configuration);
         jsonInterval = (long)(configuration.getFloat("writeinterval", 1) * 1000);
-        hidewebchatip = configuration.getBoolean("hidewebchatip", false);
-        useplayerloginip = configuration.getBoolean("use-player-login-ip", true);
-        requireplayerloginip = configuration.getBoolean("require-player-login-ip", false);
-        trust_client_name = configuration.getBoolean("trustclientname", false);
-        checkuserban = configuration.getBoolean("block-banned-player-chat", true);
-        req_login = configuration.getBoolean("webchat-requires-login", false);
-        chat_perms = configuration.getBoolean("webchat-permissions", false);
-        lengthlimit = configuration.getInteger("chatlengthlimit", 256); 
         storage = core.getDefaultMapStorage();
         baseStandaloneDir = new File(core.configuration.getString("webpath", "web"), "standalone");
         if (!baseStandaloneDir.isAbsolute()) {
@@ -148,7 +133,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                     writeConfiguration();
                 }
                 writeUpdates();
-                if (allowwebchat) {
+                if (chatConfig.allowWebChat) {
                     handleWebChat();
                 }
                 if(core.isLoginSupportEnabled())
@@ -161,12 +146,12 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
             @Override
             public void triggered(JSONObject t) {
                 s(t, "jsonfile", true);
-                s(t, "allowwebchat", allowwebchat);
-                s(t, "webchat-requires-login", req_login);
+                s(t, "allowwebchat", chatConfig.allowWebChat);
+                s(t, "webchat-requires-login", chatConfig.require_login);
                 s(t, "loginrequired", core.isLoginRequired());
                 // For 'sendmessage.php'
                 s(t, "webchat-interval", configuration.getFloat("webchat-interval", 5.0f));
-                s(t, "chatlengthlimit", lengthlimit);
+                s(t, "chatlengthlimit", chatConfig.length_limit);
             }
         });
         core.events.addListener(InternalEvents.INITIALIZED, new Event.Listener<Object>() {
@@ -376,7 +361,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
             Reader inputFileReader = null;
             try {
                 inputFileReader = new InputStreamReader(bis, cs_utf8);
-                jsonMsgs = (JSONArray) parser.parse(inputFileReader);
+                jsonMsgs = (JSONArray) new JSONParser().parse(inputFileReader);
             } catch (IOException ex) {
                 Log.severe("Exception while reading JSON-file.", ex);
             } catch (ParseException ex) {
@@ -423,32 +408,32 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                         if(init_skip)
                             continue;
                         if(uid == null) {
-                            if((!trust_client_name) || (name == null) || (name.equals(""))) {
+                            if((!chatConfig.trust_client_name) || (name == null) || (name.equals(""))) {
                                 if(ip != null)
                                     name = ip;
                             }
-                            if(useplayerloginip) {  /* Try to match using IPs of player logins */
+                            if(chatConfig.use_player_login_ip) {  /* Try to match using IPs of player logins */
                                 List<String> ids = core.getIDsForIP(name);
                                 if(ids != null && !ids.isEmpty()) {
                                     name = ids.get(0);
                                     isip = false;
-                                    if(checkuserban) {
+                                    if(chatConfig.block_banned_player_chat) {
                                         if(core.getServer().isPlayerBanned(name)) {
                                             Log.info("Ignore message from '" + ip + "' - banned player (" + name + ")");
                                             ok = false;
                                         }
                                     }
-                                    if(chat_perms && !core.getServer().checkPlayerPermission(name, "webchat")) {
+                                    if(chatConfig.chat_perm && !core.getServer().checkPlayerPermission(name, "webchat")) {
                                         Log.info("Rejected web chat from " + ip + ": not permitted (" + name + ")");
                                         ok = false;
                                     }
                                 }
-                                else if(requireplayerloginip) {
+                                else if(chatConfig.req_player_login_ip) {
                                     Log.info("Ignore message from '" + name + "' - no matching player login recorded");
                                     ok = false;
                                 }
                             }
-                            if(hidewebchatip && isip) {
+                            if(chatConfig.hidewebchatip && isip) {
                                 String n = useralias.get(name);
                                 if(n == null) { /* Make ID */
                                     n = String.format("web-%03d", aliasindex);
@@ -463,7 +448,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                                 Log.info("Ignore message from '" + uid + "' - banned user");
                                 ok = false;
                             }
-                            if(chat_perms && !core.getServer().checkPlayerPermission(uid, "webchat")) {
+                            if(chatConfig.chat_perm && !core.getServer().checkPlayerPermission(uid, "webchat")) {
                                 Log.info("Rejected web chat from " + uid + ": not permitted");
                                 ok = false;
                             }
@@ -471,8 +456,8 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                         }
                         if(ok) {
                             String message = String.valueOf(o.get("message"));
-                            if((lengthlimit > 0) && (message.length() > lengthlimit))
-                                message = message.substring(0, lengthlimit);
+                            if((chatConfig.length_limit > 0) && (message.length() > chatConfig.length_limit))
+                                message = message.substring(0, chatConfig.length_limit);
                             core.webChat(name, message);
                         }
                     }
