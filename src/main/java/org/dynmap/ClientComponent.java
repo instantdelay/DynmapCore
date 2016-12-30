@@ -13,7 +13,7 @@ public class ClientComponent extends Component {
     
     public ClientComponent(final DynmapCore plugin, final ConfigurationNode configuration) {
         super(plugin, configuration);
-        plugin.events.addListener("buildclientconfiguration", new Event.Listener<JSONObject>() {
+        plugin.events.addListener(InternalEvents.BUILD_CLIENT_CONFIG, new Event.Listener<JSONObject>() {
             @Override
             public void triggered(JSONObject root) {
                 if(!disabled)

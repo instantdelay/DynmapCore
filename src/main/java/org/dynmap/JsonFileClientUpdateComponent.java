@@ -157,7 +157,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 core.getServer().scheduleServerTask(this, jsonInterval/50);
             }}, jsonInterval/50);
         
-        core.events.addListener("buildclientconfiguration", new Event.Listener<JSONObject>() {
+        core.events.addListener(InternalEvents.BUILD_CLIENT_CONFIG, new Event.Listener<JSONObject>() {
             @Override
             public void triggered(JSONObject t) {
                 s(t, "jsonfile", true);
@@ -169,7 +169,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 s(t, "chatlengthlimit", lengthlimit);
             }
         });
-        core.events.addListener("initialized", new Event.Listener<Object>() {
+        core.events.addListener(InternalEvents.INITIALIZED, new Event.Listener<Object>() {
             @Override
             public void triggered(Object t) {
                 writeConfiguration();
@@ -178,7 +178,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 writeAccess();
             }
         });
-        core.events.addListener("server-started", new Event.Listener<Object>() {
+        core.events.addListener(InternalEvents.SERVER_STARTED, new Event.Listener<Object>() {
             @Override
             public void triggered(Object t) {
                 writeConfiguration();
@@ -187,7 +187,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 writeAccess();
             }
         });
-        core.events.addListener("worldactivated", new Event.Listener<DynmapWorld>() {
+        core.events.addListener(InternalEvents.WORLD_ACTIVATED, new Event.Listener<DynmapWorld>() {
             @Override
             public void triggered(DynmapWorld t) {
                 writeConfiguration();
@@ -195,14 +195,14 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 writeAccess();
             }
         });
-        core.events.addListener("loginupdated", new Event.Listener<Object>() {
+        core.events.addListener(InternalEvents.LOGIN_UPDATED, new Event.Listener<Object>() {
             @Override
             public void triggered(Object t) {
                 writeLogins();
                 writeAccess();
             }
         });
-        core.events.addListener("playersetupdated", new Event.Listener<Object>() {
+        core.events.addListener(InternalEvents.PLAYER_SET_UPDATED, new Event.Listener<Object>() {
             @Override
             public void triggered(Object t) {
                 writeAccess();
@@ -284,7 +284,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
     
     protected void writeConfiguration() {
         JSONObject clientConfiguration = new JSONObject();
-        core.events.trigger("buildclientconfiguration", clientConfiguration);
+        core.events.trigger(InternalEvents.BUILD_CLIENT_CONFIG, clientConfiguration);
         last_confighash = core.getConfigHashcode();
         
         byte[] content = clientConfiguration.toJSONString().getBytes(cs_utf8);
@@ -312,7 +312,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
             update.put("timestamp", currentTimestamp);
             ClientUpdateEvent clientUpdate = new ClientUpdateEvent(currentTimestamp - 30000, dynmapWorld, update);
             clientUpdate.include_all_users = true;
-            core.events.trigger("buildclientupdate", clientUpdate);
+            core.events.trigger(InternalEvents.BUILD_CLIENT_UPDATE, clientUpdate);
 
             String outputFile;
             boolean dowrap = storage.wrapStandaloneJSON(core.isLoginSupportEnabled());

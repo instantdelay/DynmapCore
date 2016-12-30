@@ -12,7 +12,7 @@ public class SimpleWebChatComponent extends Component {
 
     public SimpleWebChatComponent(final DynmapCore plugin, final ConfigurationNode configuration) {
         super(plugin, configuration);
-        plugin.events.addListener("webchat", new Event.Listener<ChatEvent>() {
+        plugin.events.addListener(InternalEvents.WEBCHAT, new Event.Listener<ChatEvent>() {
             @Override
             public void triggered(ChatEvent t) {
                 if(plugin.getServer().sendWebChatEvent(t.source, t.name, t.message)) {
@@ -33,7 +33,7 @@ public class SimpleWebChatComponent extends Component {
             }
         });
         
-        plugin.events.addListener("buildclientconfiguration", new Event.Listener<JSONObject>() {
+        plugin.events.addListener(InternalEvents.BUILD_CLIENT_CONFIG, new Event.Listener<JSONObject>() {
             @Override
             public void triggered(JSONObject t) {
                 s(t, "allowchat", configuration.getBoolean("allowchat", false));

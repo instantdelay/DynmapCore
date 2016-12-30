@@ -577,8 +577,8 @@ public class DynmapCore implements DynmapCommonAPI {
         /* Print version info */
         Log.info("version " + plugin_ver + " is enabled - core version " + version );
 
-        events.<Object>trigger("initialized", null);
-                
+        events.<Object>trigger(InternalEvents.INITIALIZED, null);
+
         //dumpColorMap("standard.txt", "standard");
         //dumpColorMap("dokudark.txt", "dokudark.zip");
         //dumpColorMap("dokulight.txt", "dokulight.zip");
@@ -2146,7 +2146,7 @@ public class DynmapCore implements DynmapCommonAPI {
             @Override
             public void run() {
                 ChatEvent event = new ChatEvent("web", name, message);
-                events.trigger("webchat", event);
+                events.trigger(InternalEvents.WEBCHAT, event);
             }
         };
         getServer().scheduleServerTask(c, 1);
@@ -2384,7 +2384,7 @@ public class DynmapCore implements DynmapCommonAPI {
     }
     // Notice that server has finished starting (needed for forge, which starts dynmap before full server is running)
     public void serverStarted() {
-        events.<Object>trigger("server-started", null);
+        events.<Object>trigger(InternalEvents.SERVER_STARTED, null);
     }
     // Normalize ID (strip out submods)
     public String getNormalizedModID(String mod) {

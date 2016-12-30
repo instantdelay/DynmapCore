@@ -76,7 +76,7 @@ public class WebAuthManager {
             if(fw != null) { try { fw.close(); } catch (IOException iox) {} }
         }
         if(success) 
-            core.events.trigger("loginupdated", null);
+            core.events.trigger(InternalEvents.LOGIN_UPDATED, null);
         return success;
     }
     private String makeHash(String pwd) {
@@ -212,7 +212,7 @@ public class WebAuthManager {
                 p.sendMessage("The user ID must match your account ID, but the password should NOT be the same.");
             }
         }
-        core.events.trigger("loginupdated", null);
+        core.events.trigger(InternalEvents.LOGIN_UPDATED, null);
         
         return true;
     }

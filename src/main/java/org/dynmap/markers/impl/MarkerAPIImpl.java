@@ -22,14 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 
+import org.dynmap.Client.ComponentMessage;
 import org.dynmap.ConfigurationNode;
 import org.dynmap.DynmapCore;
 import org.dynmap.DynmapLocation;
 import org.dynmap.DynmapWorld;
 import org.dynmap.Event;
+import org.dynmap.InternalEvents;
 import org.dynmap.Log;
 import org.dynmap.MapManager;
-import org.dynmap.Client.ComponentMessage;
 import org.dynmap.common.DynmapCommandSender;
 import org.dynmap.common.DynmapPlayer;
 import org.dynmap.hdmap.HDPerspective;
@@ -392,7 +393,7 @@ public class MarkerAPIImpl implements MarkerAPI, Event.Listener<DynmapWorld> {
         /* Freshen files */
         api.freshenMarkerFiles();
         /* Add listener so we update marker files for other worlds as they become active */
-        core.events.addListener("worldactivated", api);
+        core.events.addListener(InternalEvents.WORLD_ACTIVATED, api);
 
         api.scheduleWriteJob(); /* Start write job */
         
@@ -408,7 +409,7 @@ public class MarkerAPIImpl implements MarkerAPI, Event.Listener<DynmapWorld> {
      * @param plugin - core object
      */
     public void cleanup(DynmapCore plugin) {
-        plugin.events.removeListener("worldactivated", api);
+        plugin.events.removeListener(InternalEvents.WORLD_ACTIVATED, api);
 
         stop = true;
         if(dirty_markers) {
@@ -775,7 +776,7 @@ public class MarkerAPIImpl implements MarkerAPI, Event.Listener<DynmapWorld> {
      */
     static void playerSetUpdated(PlayerSetImpl pset, MarkerUpdate update) {
         if(api != null)
-            api.core.events.trigger("playersetupdated", null);
+            api.core.events.trigger(InternalEvents.PLAYER_SET_UPDATED, null);
     }
     
     /**

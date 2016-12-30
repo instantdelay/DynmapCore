@@ -1166,7 +1166,7 @@ public class MapManager {
         	worlds.add(insertIndex, dynmapWorld);
         }
         worldsLookup.put(worldname, dynmapWorld);
-        core.events.trigger("worldactivated", dynmapWorld);
+        core.events.trigger(InternalEvents.WORLD_ACTIVATED, dynmapWorld);
         /* If world is loaded, also handle this */
         if(dynmapWorld.isLoaded()) {
             loadWorld(dynmapWorld);

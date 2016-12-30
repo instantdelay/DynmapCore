@@ -36,7 +36,7 @@ public class InternalClientUpdateComponent extends ClientUpdateComponent {
         final int length_limit = configuration.getInteger("chatlengthlimit", 256);
         final List<String> trustedproxy = dcore.configuration.getStrings("trusted-proxies", null);
 
-        dcore.events.addListener("buildclientconfiguration", new Event.Listener<JSONObject>() {
+        dcore.events.addListener(InternalEvents.BUILD_CLIENT_CONFIG, new Event.Listener<JSONObject>() {
             @Override
             public void triggered(JSONObject t) {
                 s(t, "allowwebchat", allowwebchat);
@@ -95,14 +95,14 @@ public class InternalClientUpdateComponent extends ClientUpdateComponent {
                 core.getServer().scheduleServerTask(this, jsonInterval/50);
             }}, jsonInterval/50);
         
-        core.events.addListener("initialized", new Event.Listener<Object>() {
+        core.events.addListener(InternalEvents.INITIALIZED, new Event.Listener<Object>() {
             @Override
             public void triggered(Object t) {
                 writeConfiguration();
                 writeUpdates(); /* Make sure we stay in sync */
             }
         });
-        core.events.addListener("worldactivated", new Event.Listener<DynmapWorld>() {
+        core.events.addListener(InternalEvents.WORLD_ACTIVATED, new Event.Listener<DynmapWorld>() {
             @Override
             public void triggered(DynmapWorld t) {
                 writeConfiguration();
@@ -125,14 +125,14 @@ public class InternalClientUpdateComponent extends ClientUpdateComponent {
             update.put("timestamp", currentTimestamp);
             ClientUpdateEvent clientUpdate = new ClientUpdateEvent(currentTimestamp - 30000, dynmapWorld, update);
             clientUpdate.include_all_users = true;
-            core.events.trigger("buildclientupdate", clientUpdate);
+            core.events.trigger(InternalEvents.BUILD_CLIENT_UPDATE, clientUpdate);
 
             updates.put(dynmapWorld.getName(), update);
         }
     }
     protected void writeConfiguration() {
         JSONObject clientConfiguration = new JSONObject();
-        core.events.trigger("buildclientconfiguration", clientConfiguration);
+        core.events.trigger(InternalEvents.BUILD_CLIENT_CONFIG, clientConfiguration);
         this.clientConfiguration = clientConfiguration;
         last_confighash = core.getConfigHashcode();
     }
