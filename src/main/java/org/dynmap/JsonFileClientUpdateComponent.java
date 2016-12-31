@@ -13,13 +13,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 import org.dynmap.chat.ChatConfiguration;
+import org.dynmap.chat.RawWebMessage;
+import org.dynmap.chat.WebMessageEvent;
 import org.dynmap.storage.MapStorage;
 import org.dynmap.utils.BufferInputStream;
 import org.dynmap.utils.BufferOutputStream;
@@ -35,8 +35,6 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
     protected long lastTimestamp = 0;
     protected long lastChatTimestamp = 0;
     private final ChatConfiguration chatConfig;
-    private final Map<String,String> useralias = new HashMap<String,String>();
-    private int aliasindex = 1;
     private long last_confighash;
     private MessageDigest md;
     private MapStorage storage;
@@ -55,6 +53,7 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
         }
     }
     private class FileProcessor implements Runnable {
+        @Override
         public void run() {
             while(true) {
                 FileToWrite f = null;
@@ -381,89 +380,42 @@ public class JsonFileClientUpdateComponent extends ClientUpdateComponent {
                 Iterator<?> iter = jsonMsgs.iterator();
                 boolean init_skip = (lastChatTimestamp == 0);
                 while (iter.hasNext()) {
-                    boolean ok = true;
                     JSONObject o = (JSONObject) iter.next();
-                    String ts = String.valueOf(o.get("timestamp"));
-                    if(ts.equals("null")) ts = "0";
-                    long cts;
-                    try {
-                        cts = Long.parseLong(ts);
-                    } catch (NumberFormatException nfx) {
-                        try {
-                            cts = (long) Double.parseDouble(ts);
-                        } catch (NumberFormatException nfx2) {
-                            cts = 0;
-                        }
+                    long messageTimestamp = tryParse(Objects.toString(o.get("timestamp"), "0"));
+
+                    if (messageTimestamp <= lastChatTimestamp) {
+                        // Skip old messages
+                        continue;
                     }
-                    if (cts > lastChatTimestamp) {
-                        String name = String.valueOf(o.get("name"));
-                        String ip = String.valueOf(o.get("ip"));
-                        String uid = null;
-                        Object usr = o.get("userid");
-                        if(usr != null) {
-                            uid = String.valueOf(usr);
-                        }
-                        boolean isip = true;
-                        lastChatTimestamp = cts;
-                        if(init_skip)
-                            continue;
-                        if(uid == null) {
-                            if((!chatConfig.trust_client_name) || (name == null) || (name.equals(""))) {
-                                if(ip != null)
-                                    name = ip;
-                            }
-                            if(chatConfig.use_player_login_ip) {  /* Try to match using IPs of player logins */
-                                List<String> ids = core.getIDsForIP(name);
-                                if(ids != null && !ids.isEmpty()) {
-                                    name = ids.get(0);
-                                    isip = false;
-                                    if(chatConfig.block_banned_player_chat) {
-                                        if(core.getServer().isPlayerBanned(name)) {
-                                            Log.info("Ignore message from '" + ip + "' - banned player (" + name + ")");
-                                            ok = false;
-                                        }
-                                    }
-                                    if(chatConfig.chat_perm && !core.getServer().checkPlayerPermission(name, "webchat")) {
-                                        Log.info("Rejected web chat from " + ip + ": not permitted (" + name + ")");
-                                        ok = false;
-                                    }
-                                }
-                                else if(chatConfig.req_player_login_ip) {
-                                    Log.info("Ignore message from '" + name + "' - no matching player login recorded");
-                                    ok = false;
-                                }
-                            }
-                            if(chatConfig.hidewebchatip && isip) {
-                                String n = useralias.get(name);
-                                if(n == null) { /* Make ID */
-                                    n = String.format("web-%03d", aliasindex);
-                                    aliasindex++;
-                                    useralias.put(name, n);
-                                }
-                                name = n;
-                            }
-                        }
-                        else {
-                            if(core.getServer().isPlayerBanned(uid)) {
-                                Log.info("Ignore message from '" + uid + "' - banned user");
-                                ok = false;
-                            }
-                            if(chatConfig.chat_perm && !core.getServer().checkPlayerPermission(uid, "webchat")) {
-                                Log.info("Rejected web chat from " + uid + ": not permitted");
-                                ok = false;
-                            }
-                            name = uid;
-                        }
-                        if(ok) {
-                            String message = String.valueOf(o.get("message"));
-                            if((chatConfig.length_limit > 0) && (message.length() > chatConfig.length_limit))
-                                message = message.substring(0, chatConfig.length_limit);
-                            core.webChat(name, message);
-                        }
-                    }
+                    lastChatTimestamp = messageTimestamp;
+
+                    if (init_skip)
+                        continue;
+
+                    RawWebMessage rmsg = new RawWebMessage();
+                    rmsg.setProvidedName(Objects.toString(o.get("name"), null));
+                    rmsg.setIp(Objects.toString(o.get("ip"), null));
+                    rmsg.setSessionUsername(Objects.toString(o.get("userid"), null));
+                    rmsg.setMessage(Objects.toString(o.get("message"), ""));
+                    rmsg.setTimestamp(messageTimestamp);
+                    core.events.trigger("webmessage", new WebMessageEvent(rmsg));
                 }
             }
         }
+    }
+
+    private long tryParse(String ts) {
+        long messageTimestamp;
+        try {
+            messageTimestamp = Long.parseLong(ts);
+        } catch (NumberFormatException nfx) {
+            try {
+                messageTimestamp = (long) Double.parseDouble(ts);
+            } catch (NumberFormatException nfx2) {
+                messageTimestamp = 0;
+            }
+        }
+        return messageTimestamp;
     }
     protected void handleRegister() {
         if(core.pendingRegisters() == false)

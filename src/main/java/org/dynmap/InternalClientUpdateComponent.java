@@ -36,15 +36,7 @@ public class InternalClientUpdateComponent extends ClientUpdateComponent {
         });
 
         if (chatConfig.allowWebChat) {
-            @SuppressWarnings("serial")
-            SendMessageServlet messageHandler = new SendMessageServlet(core, chatConfig) {{
-                onMessageReceived.addListener(new Event.Listener<Message> () {
-                    @Override
-                    public void triggered(Message t) {
-                        core.webChat(t.name, t.message);
-                    }
-                });
-            }};
+            SendMessageServlet messageHandler = new SendMessageServlet(core, chatConfig);
             dcore.addServlet("/up/sendmessage", messageHandler);
         }
         core.getServer().scheduleServerTask(new Runnable() {
